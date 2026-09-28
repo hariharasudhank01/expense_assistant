@@ -1,0 +1,18 @@
+services:
+  jupyter-notebook-expense:
+    image: jupyter/scipy-notebook:latest
+    container_name: jupyter_notebook
+    ports:
+      - "8888:8888"
+    volumes:
+      # Mounts your local folder to access your Python notebooks and scripts
+      - ${PROJECT_DIR}:/home/jovyan/work
+      # Mounts your directory of CSV files into Jupyter
+      - ${CSV_PATH}:/home/jovyan/work/data/
+    environment:
+      # Disables token authentication for local ease-of-use (optional)
+      - JUPYTER_TOKEN=${ADMIN_PASSWORD}
+    networks:
+      - expense-network
+networks:
+  expense-network:
