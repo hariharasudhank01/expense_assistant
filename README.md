@@ -13,8 +13,8 @@ actual math).
 
 1. **Extract** — reads a bank statement PDF, pulls out the transaction table, and
    validates it against the running balance to catch missed/misread rows.
-2. **Transform** — cleans each transaction description into merchant, suburb, state
-   and country using pattern-based text splitting, then assigns a spending category.
+2. **Transform** — cleans each transaction description down to a merchant name by
+   stripping trailing location tokens, then assigns a spending category.
    Categories are cached per merchant (`output/merchant_category.json`) and only
    looked up via an LLM the first time a new merchant is seen. Also tags each
    transaction with `spend_type` (essential / discretionary / other) and

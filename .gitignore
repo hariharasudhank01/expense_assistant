@@ -5,5 +5,5 @@ src/.env
 **/__pycache__
 **/.ipynb_checkpoints
 .DS_Store
-
+docs/
 src/analysis/analysis.ipynb

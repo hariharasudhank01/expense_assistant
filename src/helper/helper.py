@@ -7,6 +7,8 @@ load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
 project_dir = os.getenv("PROJECT_DIR")
 file = os.getenv("FILENAME")
 model = os.getenv("LLM_MODEL")
+# Merchant categorisation can use a different model from the chat agent.
+categorise_model = os.getenv("CATEGORISE_MODEL", model)
 
 def write_json(file, path):
     try:

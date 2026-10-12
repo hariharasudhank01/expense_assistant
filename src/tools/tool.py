@@ -72,7 +72,8 @@ def spend_breakdown(period_start=None, period_end=None, group_by="category", agg
 def top_merchants(period_start=None, period_end=None, category=None, top_n=5):
     try:
         df = load_data()
-        df = df[df["spend_type"] != "others"]   # drop transfers/salary, keep real spend
+        # Real spend only - drops salary, self transfers and shared expenses.
+        df = df[df["spend_type"].isin(["essential", "discretionary"])]
         if category:
             df = df[df["category"] == category]
         if period_start:
@@ -80,8 +81,9 @@ def top_merchants(period_start=None, period_end=None, category=None, top_n=5):
         if period_end:
             df = df[df["date"] <= pd.Timestamp(period_end)]
 
+        # Spend is negative, so negate the sum - refunds (positive) then reduce it.
         summary = df.groupby("merchant")["amount"].agg(
-            total_spend=lambda s: round(s.abs().sum(), 2),
+            total_spend=lambda s: round(-s.sum(), 2),
             visits="count"
         ).sort_values("total_spend", ascending=False)
 
