@@ -146,6 +146,10 @@ recurring_max_amount_spread = 0.15   # typical distance from the median amount, 
 # Bills are recurring even when irregular (utilities) or too new to show a pattern.
 fixed_bill_categories = ["rent", "utilities", "subscriptions"]
 
+# Period to assume for a bill when no pattern was found (too few payments or
+# irregular gaps), so it still gets a next due date and a stale check.
+default_bill_periods = {"rent": "fortnightly", "utilities": "monthly", "subscriptions": "monthly"}
+
 # Habits, not bills - never recurring even when they look regular.
 recurring_excluded_categories = ["groceries", "cafe", "dining_out", "shopping",
                                  "transport", "liquor", "delivery", "vending"]

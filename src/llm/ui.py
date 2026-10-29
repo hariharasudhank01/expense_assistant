@@ -20,6 +20,7 @@ with st.sidebar:
 - Which category did I spend the most on last month?
 - Who are my top 5 merchants?
 - Any unusual transactions in July 2026?
+- Show me a chart of my spending by category last month
 """)
     if st.button("Clear chat"):
         st.session_state.messages = []
@@ -31,6 +32,8 @@ if "messages" not in st.session_state:
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
+        for chart in message.get("charts", []):
+            st.image(chart)
 
 if query := st.chat_input("Ask about your spending..."):
     st.session_state.messages.append({"role": "user", "content": query})
@@ -39,7 +42,9 @@ if query := st.chat_input("Ask about your spending..."):
 
     with st.chat_message("assistant"):
         with st.spinner("Checking your transactions..."):
-            answer = ask(query)
+            answer, charts = ask(query)
         st.markdown(answer)
+        for chart in charts:
+            st.image(chart)
 
-    st.session_state.messages.append({"role": "assistant", "content": answer})
+    st.session_state.messages.append({"role": "assistant", "content": answer, "charts": charts})

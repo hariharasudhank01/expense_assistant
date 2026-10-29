@@ -1,6 +1,7 @@
 import pandas as pd
 import pytest
 from src.transform import pre_process
+from src.helper import date
 from src.transform.pre_process import extract_merchant, populate_spend_type
 
 @pytest.mark.parametrize("desc, expected", [
@@ -127,3 +128,38 @@ def test_populate_recurring():
     assert out.loc["streamco", "is_recurring"] and out.loc["streamco", "recurrence_period"] == "monthly"
     assert not out.loc["gym", "is_recurring"] and pd.isna(out.loc["gym", "recurrence_period"])
     assert out.loc["powerco", "is_recurring"] and pd.isna(out.loc["powerco", "recurrence_period"])
+
+# Fixed "today" (a Thursday) and anchor, so the test doesn't depend on the real date or .env.
+TODAY = pd.Timestamp("2026-10-29")
+
+@pytest.mark.parametrize("text, start, end", [
+    ("today",                    "2026-10-29", "2026-10-29"),
+    ("this week",                "2026-10-26", "2026-11-01"),   # weeks start on Monday
+    ("last week",                "2026-10-19", "2026-10-25"),
+    ("last month",               "2026-09-01", "2026-09-30"),
+    ("last quarter",             "2026-07-01", "2026-09-30"),
+    ("last 7 days",              "2026-10-23", "2026-10-29"),   # rolling, includes today
+    ("past 3 weeks",             "2026-10-09", "2026-10-29"),
+    ("July",                     "2026-07-01", "2026-07-31"),
+    ("november",                 "2025-11-01", "2025-11-30"),   # not in the future, so last year
+    ("july 2025",                "2025-07-01", "2025-07-31"),
+    ("Q2",                       "2026-04-01", "2026-06-30"),
+    ("since sept",               "2026-09-01", "2026-10-29"),
+    ("july to september",        "2026-07-01", "2026-09-30"),
+    ("in the last month",        "2026-09-01", "2026-09-30"),   # filler words stripped
+    ("2026-07-01 to 2026-07-15", "2026-07-01", "2026-07-15"),
+    ("this pay cycle",           "2026-10-22", "2026-11-04"),
+    ("last pay cycle",           "2026-10-08", "2026-10-21"),
+])
+def test_parse_period(monkeypatch, text, start, end):
+    monkeypatch.setattr(date, "pay_cycle_anchor", "2026-01-01")
+    got = date.parse_period(text, TODAY)
+    assert (f"{got[0]:%Y-%m-%d}", f"{got[1]:%Y-%m-%d}") == (start, end)
+
+def test_resolve_period_clips_to_data():
+    data_start, data_end = pd.Timestamp("2026-01-01"), pd.Timestamp("2026-09-22")
+    out = date.resolve_period("last month", TODAY, data_start, data_end)
+    assert (out["start"], out["end"]) == ("2026-09-01", "2026-09-22")
+    assert "22 Sep" in out["note"]
+    assert "error" in date.resolve_period("this month", TODAY, data_start, data_end)   # no data, not $0
+    assert "error" in date.resolve_period("the summer", TODAY)
