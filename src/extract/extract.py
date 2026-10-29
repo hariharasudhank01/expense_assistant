@@ -13,6 +13,7 @@ def read_pdf(filename):
     vertical_line = [59, 120, 390, 480, 535] # Don't change the value
     try:
         with pdfplumber.open(filename) as pdf:
+            # The last page of these statements is blank, so it's skipped.
             for page_no in range(len(pdf.pages)-1):
                 page = pdf.pages[page_no]
                 if page_no == 0:
@@ -28,14 +29,16 @@ def read_pdf(filename):
                         "explicit_vertical_lines": vertical_line
                     }
                 )
-                for row in table:
+                # extract_table returns None for a page with no table.
+                for row in table or []:
                     if not row == col_name:
                         row_dict = dict(zip(col_name, [val or "" for val in row]))
                         transactions.append(row_dict)
         return transactions
-                
+
     except Exception as e:
         print(f"Error reading the file {filename}, {e}")
+        return []
 
 def check_format(transactions):
     valid_transaction = []
@@ -61,12 +64,18 @@ def check_format(transactions):
     return valid_transaction, manual_review
 
 def check_sum(transactions):
+    # Any error means the statement couldn't be verified, so it fails the check.
+    if not transactions:
+        print("No valid transactions extracted")
+        return False
+
     n = len(transactions) - 1
     try:
         open_balance = float(transactions[0].get("Balance").replace("$", "").replace(",", ""))
         close_balance = float(transactions[n].get("Balance").replace("$", "").replace(",", ""))
     except Exception as e:
         print(f"Failed to convert Balance to float, {e}")
+        return False
 
     try:
         for transaction_id in range(1, len(transactions)):
@@ -75,6 +84,7 @@ def check_sum(transactions):
             open_balance = open_balance + float(amount.replace("$", "").replace(",", ""))
     except Exception as e:
         print(f"Failed to convert Amount string to float, Error {e}")
+        return False
 
     try:
         if not round(open_balance, 2) == close_balance:
@@ -83,6 +93,7 @@ def check_sum(transactions):
             return False
     except Exception as e:
         print(f"Error: {e}. Review the JSON file")
+        return False
     return True
 
 def validate_transaction(transactions):
@@ -98,6 +109,6 @@ def extract(filename):
     transactions = read_pdf(filename)
     if not validate_transaction(transactions):
         print(f"Extraction failed for {filename}")
-        sys.exit(0)
+        sys.exit(1)
     print(f"Completed Extracting PDF: {filename}")
     return valid_trans_path
